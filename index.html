@@ -24,45 +24,53 @@
             z-index:-1;
         }
 
-        /* 중앙 텍스트 */
+        /* 오른쪽 정렬 (중앙 기준 오른쪽 붙이기) */
         .center {
-            position:absolute;
+            position:fixed;
             top:50%;
             left:50%;
-            transform:translate(-50%,-50%);
-            text-align:center;
+            transform:translate(-100%,-50%);
+            text-align:right;
         }
 
-        h1 { font-size:48px; margin:0; }
-        p { margin:10px 0 20px; opacity:0.8; }
-
-        /* 버튼 */
+        .buttons {
+            position:fixed;
+            bottom:40px;
+            left:50%;
+            transform:translateX(-100%);
+            display:flex;
+            gap:20px;
+        }
+        
         .buttons a {
-            margin:5px;
-            padding:10px 20px;
-            border:1px solid white;
+            display:inline-block;
+            margin:0;
             color:white;
             text-decoration:none;
             cursor:pointer;
         }
-        .buttons a:hover {
-            background:white;
-            color:black;
-        }
 
-        /* 패널 */
+        /* 패널 (완전히 숨기기) */
         .panel {
             position:fixed;
             top:0;
-            left:-320px;
-            width:320px;
+            left:-500px; /* width보다 크게 */
+            width:480px;
             height:100%;
-            background:rgba(0,0,0,0.85);
+            background:rgba(0,0,0,0.9);
             padding:20px;
-            transition:0.3s;
+            transition:0.2s;
             overflow-y:auto;
+            z-index:10;
         }
         .panel.active { left:0; }
+
+        /* 닫기 버튼 */
+        .close-btn {
+            margin-bottom:10px;
+            cursor:pointer;
+            opacity:0.7;
+        }
 
         /* 갤러리 */
         .grid {
@@ -75,17 +83,24 @@
             cursor:pointer;
         }
 
-        /* 확대뷰 */
         .viewer {
             position:fixed;
             top:50%;
             left:50%;
             transform:translate(-50%,-50%);
             display:none;
+            width:90%;
+            height:90%;
+            z-index:20;
+            pointer-events:none; /* 핵심 */
         }
+
         .viewer img {
-            max-width:80vw;
-            max-height:80vh;
+            width:100%;
+            height:100%;
+            object-fit:contain;
+            pointer-events:auto; /* 이미지에만 클릭 허용 */
+            cursor:pointer;
         }
 
         /* 음악 */
@@ -106,74 +121,110 @@
 <div class="bg"></div>
 
 <div class="center">
-    <h1>YOUR NAME</h1>
-    <p>Singer-Songwriter & Composer</p>
+    <h1 style="font-size: 64px;">Sey</h1>
+    <p style="font-size: 18px;">Singer-Songwriter & Composer</p>
+</div>
 
-    <div class="buttons">
-        <a onclick="toggleGallery()">Gallery</a>
-        <a onclick="toggleMusic()">Music</a>
-        <a href="https://instagram.com/yourlink" target="_blank">Instagram</a>
-    </div>
+<div class="buttons">
+    <p style="font-size: 24px;"><a onclick="toggleGallery()">Gallery</a>&nbsp&nbsp<a onclick="toggleMusic()">Music</a>&nbsp&nbsp&nbsp&nbsp<a href="https://instagram.com/todays.sey" target="_blank"><img src="images/icon_insta.png" width="24" height="24"></a></p>
 </div>
 
 <!-- 갤러리 -->
 <div id="gallery" class="panel">
-    <h3>Gallery</h3>
+    <div class="close-btn" onclick="closePanels()">[ X ]</div>
     <div class="grid">
-        <img src="images/gallery1.jpg" onclick="view(this.src)">
-        <img src="images/gallery2.jpg" onclick="view(this.src)">
-        <img src="images/gallery3.jpg" onclick="view(this.src)">
-        <img src="images/gallery4.jpg" onclick="view(this.src)">
-        <img src="images/gallery5.jpg" onclick="view(this.src)">
-        <img src="images/gallery6.jpg" onclick="view(this.src)">
-        <img src="images/gallery7.jpg" onclick="view(this.src)">
-        <img src="images/gallery8.jpg" onclick="view(this.src)">
-        <img src="images/gallery9.jpg" onclick="view(this.src)">
+        <img src="images/gallery1.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery2.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery3.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery4.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery5.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery6.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery7.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery8.jpg" onclick="view(event, this.src)">
+        <img src="images/gallery9.jpg" onclick="view(event, this.src)">
     </div>
 </div>
 
-<div id="viewer" class="viewer" onclick="this.style.display='none'">
+<div id="viewer" class="viewer">
     <img id="big">
 </div>
 
 <!-- 음악 -->
 <div id="music" class="panel">
-    <h3>Music</h3>
-    <div class="track" onclick="play('music/2022_Personal_FilmRework_TENET.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2022_Personal_FilmRework_TheBourneUltimatum.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2022_Personal_FanWork_Persona.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2022_DarkFantasy_Witchcraft.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2019_MiniRPG_Cemetry.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2019_MiniRPG_Sewer.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2018_MiniGame_Polygons.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2018_SuperPixelRacers_FuriousFight.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2018_SuperPixelRacers_ChasingTime.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2018_SuperPixelRacers_ProdigyClub.mp3')">Track 1</div>
-    <div class="track" onclick="play('music/2018_SuperPixelRacers_DefiniteWinner.mp3')">Track 1</div>
-    <audio id="player" controls></audio>
+    <div class="close-btn" onclick="closePanels()">[ X ]</div>
+
+    <div class="track" onclick="play('tracks/2022_Personal_Film_Rework_-_TENET.mp3')"> 2022 Personal Film Rework - TENET</div>
+    <div class="track" onclick="play('tracks/2022_Personal_Film_Rework_-_The_Bourne_Ultimatum.mp3')"> 2022 Personal Film Rework - The Bourne Ultimatum</div>
+    <div class="track" onclick="play('tracks/2022_Personal_Fan-Work_-_Persona.mp3')"> 2022 Personal Fan-Work - Persona</div>
+    <div class="track" onclick="play('tracks/2022_Dark_Fantasy_-_Witchcraft.mp3')"> 2022 Dark Fantasy - Witchcraft</div>
+    <div class="track" onclick="play('tracks/2019_Mini_RPG_-_Cemetery.mp3')"> 2019 Mini RPG - Cemetery</div>
+    <div class="track" onclick="play('tracks/2019_Mini_RPG_-_Sewer.mp3')"> 2019 Mini RPG - Sewer</div>
+    <div class="track" onclick="play('tracks/2018_Mini_Game_-_Polygons.mp3')"> 2018 Mini Game - Polygons</div>
+    <div class="track" onclick="play('tracks/2018_Super_Pixel_Racers_-_Furious_Fight.mp3')"> 2018 Super Pixel Racers - Furious Fight</div>
+    <div class="track" onclick="play('tracks/2018_Super_Pixel_Racers_-_Chasing_Time.mp3')"> 2018 Super Pixel Racers - Chasing Time</div>
+    <div class="track" onclick="play('tracks/2018_Super_Pixel_Racers_-_Prodigy_Club.mp3')"> 2018 Super Pixel Racers - Prodigy Club</div> 
+    <div class="track" onclick="play('tracks/2018_Super_Pixel_Racers_-_Definite_Winner.mp3')"> 2018 Super Pixel Racers - Definite Winner</div>
+
+    <div class="track" > </div>
+    <div id="nowPlaying" style="margin-top:10px; opacity:0.7;"></div>
+    <audio id="player" controls controlsList="nodownload nofullscreen noplaybackrate"></audio>
 </div>
 
 <script>
+    let lastTrack = "tracks/2022_Personal_Film_Rework_-_TENET.mp3";
+
     function toggleGallery(){
         document.getElementById('gallery').classList.toggle('active');
         document.getElementById('music').classList.remove('active');
     }
 
     function toggleMusic(){
-        document.getElementById('music').classList.toggle('active');
+        const music = document.getElementById('music');
+        music.classList.toggle('active');
         document.getElementById('gallery').classList.remove('active');
-    }
 
-    function view(src){
-        document.getElementById('big').src = src;
-        document.getElementById('viewer').style.display = 'block';
+        // 자동 재생 제거 (단, src만 세팅)
+        if(music.classList.contains('active')){
+            const p = document.getElementById('player');
+            if(!p.src){
+                p.src = lastTrack;
+                updateNowPlaying(lastTrack);
+            }
+        }
     }
-
+    
     function play(src){
         const p = document.getElementById('player');
         p.src = src;
         p.play();
+        lastTrack = src;
+        updateNowPlaying(src);
     }
+
+    function updateNowPlaying(src){
+        const name = src.split('/').pop().replace('.mp3','').replaceAll('_',' ');
+        document.getElementById('nowPlaying').innerText = name;
+    }
+
+    function closePanels(){
+        document.getElementById('gallery').classList.remove('active');
+        document.getElementById('music').classList.remove('active');
+        closeViewer();
+    }
+
+    function view(e, src){
+        e.stopPropagation(); // 이거 핵심
+        document.getElementById('big').src = src;
+        document.getElementById('viewer').style.display = 'block';
+    }
+
+    function closeViewer(){
+        document.getElementById('viewer').style.display = 'none';
+    }
+
+    document.getElementById('big').onclick = function(){
+        closeViewer();
+    };
 </script>
 
 </body>
