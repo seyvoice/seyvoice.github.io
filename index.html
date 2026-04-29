@@ -6,6 +6,11 @@
     <title>Portfolio</title>
 
     <style>
+        :root {
+            /* 왼쪽 패널의 너비 공식 */
+            --panel-w: clamp(8%, calc(100% - 100vh), 480px);
+        }
+        
         html, body {
             margin:0;
             padding:0;
@@ -55,10 +60,10 @@
             position:fixed;
             top:0;
             left:-500px; /* width보다 크게 */
-            width:480px;
+            width:var(--panel-w);
             height:100%;
             background:rgba(0,0,0,0.9);
-            padding:20px;
+            padding:1px;
             transition:0.2s;
             overflow-y:auto;
             z-index:10;
@@ -76,28 +81,46 @@
         .grid {
             display:grid;
             grid-template-columns:repeat(3,1fr);
-            gap:8px;
+            gap:1px;
+        }
+        /* 작은 화면에서 조정 */
+        @media (max-width: calc(100vh + 320px)) {
+            .grid {
+                grid-template-columns:repeat(2,1fr);
+            }
+        }
+        @media (max-width: calc(100vh + 110px)) {
+            .grid {
+                grid-template-columns:repeat(1,1fr);
+            }
         }
         .grid img {
             width:100%;
             cursor:pointer;
         }
-
+        
         .viewer {
-            position:fixed;
-            top:50%;
-            left:50%;
-            transform:translate(-50%,-50%);
-            display:none;
-            width:90%;
-            height:90%;
+            position: fixed;
+            left: calc(var(--panel-w) + 2px); /* 패널 바로 오른쪽부터 시작 */
+            top: 0;
+            width: calc(100% - var(--panel-w) - 2px); /* 나머지 공간 전체 */
+            height: 100vh;
+            
+            display: none;
+            align-items: center;
+            justify-content: center;
+            
+            /* 뷰어 주변 여백을 반투명 검정으로 채움 */
+            background-color: rgba(0, 0, 0, 0.7);
+            
             z-index:20;
             pointer-events:none; /* 핵심 */
         }
 
         .viewer img {
-            width:100%;
-            height:100%;
+            position: relative;
+            width: min(100%, 100vh);
+            aspect-ratio: 1 / 1;
             object-fit:contain;
             pointer-events:auto; /* 이미지에만 클릭 허용 */
             cursor:pointer;
@@ -207,15 +230,15 @@
     }
 
     function closePanels(){
+        closeViewer();
         document.getElementById('gallery').classList.remove('active');
         document.getElementById('music').classList.remove('active');
-        closeViewer();
     }
 
     function view(e, src){
         e.stopPropagation(); // 이거 핵심
         document.getElementById('big').src = src;
-        document.getElementById('viewer').style.display = 'block';
+        document.getElementById('viewer').style.display = 'flex';
     }
 
     function closeViewer(){
