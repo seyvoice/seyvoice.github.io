@@ -7,7 +7,7 @@
 
     <style>
         :root {
-            /* 왼쪽 패널의 너비 공식 */
+            /* 갤러리패널의 너비 공식 */
             --panel-w: clamp(8%, calc(100% - 100vh), 480px);
         }
 
@@ -61,8 +61,8 @@
             cursor:pointer;
         }
 
-        /* 패널 (완전히 숨기기) */
-        .panel {
+        /* 갤러리 패널 (완전히 숨기기) */
+        .galleryPanel {
             position:fixed;
             top:0;
             left:-500px; /* width보다 크게 */
@@ -74,18 +74,38 @@
             overflow-y:auto;
             z-index:10;
         }
-        .panel.active { left:0; }
+        .galleryPanel.active { left:0; }
 
-        @media (orientation: portrait)
+        @media (max-width: 80vh) and (orientation: portrait)
         {
-            .panel {
-                top:-500px;
-                left:-500px; /* width보다 크게 */
-                position:fixed;
+            .galleryPanel {
+                left:-120%;
                 width:100%;
-                height:100%;
-                background:url('sey_gallery/bg.jpg') center/cover no-repeat;
-                z-index:-1;
+                z-index:1;
+            }
+        }
+
+        /* 음악 패널 (완전히 숨기기) */
+        .musicPanel {
+            position:fixed;
+            top:0;
+            left:-500px; /* width보다 크게 */
+            width:480px;
+            height:100%;
+            background:rgba(0,0,0,0.8);
+            padding:1px;
+            transition:0.2s;
+            overflow-y:auto;
+            z-index:10;
+        }
+        .musicPanel.active { left:0; }
+
+        @media (max-width: 480px), (orientation: portrait)
+        {
+            .musicPanel {
+                left:-120%;
+                width:100%;
+                z-index:1;
             }
         }
 
@@ -113,6 +133,12 @@
                 grid-template-columns:repeat(1,1fr);
             }
         }
+        @media (max-width: 80vh) and (orientation: portrait)
+        {
+            .grid {
+                grid-template-columns:repeat(3,1fr);
+            }
+        }
         .grid img {
             width:100%;
             cursor:pointer;
@@ -133,7 +159,16 @@
             background-color: rgba(0, 0, 0, 0.6);
             
             z-index:20;
-            pointer-events:none; /* 핵심 */
+            /*pointer-events:none; !* 클릭 비허용 *!*/
+            pointer-events:auto; /* 클릭 허용 */
+            cursor:pointer;
+        }
+        @media (max-width: 80vh) and (orientation: portrait)
+        {
+            .viewer {
+                left: 0;
+                width: 100%;
+            }
         }
 
         .viewer img {
@@ -141,15 +176,22 @@
             width: min(100%, 100vh);
             aspect-ratio: 1 / 1;
             object-fit:contain;
-            pointer-events:auto; /* 이미지에만 클릭 허용 */
+            pointer-events:auto; /* 클릭 허용 */
             cursor:pointer;
         }
 
         /* 음악 */
         .track {
+            max-height: 20px;
             cursor:pointer;
-            padding:6px 0;
+            padding-left:10px;
+            padding-bottom:10px;
             border-bottom:1px solid #444;
+        }
+        .nowPlaying {
+            max-height: 20px;
+            padding-left:10px;
+            opacity:0.5
         }
         audio {
             width:100%;
@@ -172,7 +214,7 @@
 </div>
 
 <!-- 갤러리 -->
-<div id="gallery" class="panel">
+<div id="gallery" class="galleryPanel">
     <div class="close-btn" onclick="closePanels()">[ X ]</div>
     <div class="grid">
         <img src="sey_gallery/gallery1.jpg" onclick="view(event, this.src)">
@@ -187,12 +229,12 @@
     </div>
 </div>
 
-<div id="viewer" class="viewer">
-    <img id="big">
+<div id="viewerArea" class="viewer">
+    <img id="viewerCanvas">
 </div>
 
 <!-- 음악 -->
-<div id="music" class="panel">
+<div id="music" class="musicPanel">
     <div class="close-btn" onclick="closePanels()"><p>[ X ]</p></div>
 
     <div class="track" onclick="play('sey_tracks/2022_Personal_Film_Rework_-_TENET.mp3')"><p> 2022 Personal Film Rework - TENET</p></div>
@@ -208,12 +250,12 @@
     <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Definite_Winner.mp3')"><p> 2018 Super Pixel Racers - Definite Winner</p></div>
 
     <div class="track" > </div>
-    <div style="margin-top:10px; opacity:0.7;"><p id="nowPlaying"></p></div>
+    <div class="nowPlaying"><p id="nowPlaying"></p></div>
     <audio id="player" controls controlsList="nodownload nofullscreen noplaybackrate"></audio>
 </div>
 
 <script>
-    let lastTrack = "tracks/2022_Personal_Film_Rework_-_TENET.mp3";
+    let lastTrack = "sey_tracks/2022_Personal_Film_Rework_-_TENET.mp3";
 
     function toggleGallery(){
         document.getElementById('gallery').classList.toggle('active');
@@ -245,7 +287,7 @@
 
     function updateNowPlaying(src){
         const name = src.split('/').pop().replace('.mp3','').replaceAll('_',' ');
-        document.getElementById('nowPlaying').innerText = name;
+        document.getElementById('nowPlaying').innerText = "▶ " + name;
     }
 
     function closePanels(){
@@ -256,15 +298,15 @@
 
     function view(e, src){
         e.stopPropagation(); // 이거 핵심
-        document.getElementById('big').src = src;
-        document.getElementById('viewer').style.display = 'flex';
+        document.getElementById('viewerCanvas').src = src;
+        document.getElementById('viewerArea').style.display = 'flex';
     }
 
     function closeViewer(){
-        document.getElementById('viewer').style.display = 'none';
+        document.getElementById('viewerArea').style.display = 'none';
     }
 
-    document.getElementById('big').onclick = function(){
+    document.getElementById('viewerArea').onclick = function(){
         closeViewer();
     };
 </script>
