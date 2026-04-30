@@ -10,6 +10,11 @@
             /* 왼쪽 패널의 너비 공식 */
             --panel-w: clamp(8%, calc(100% - 100vh), 480px);
         }
+
+        h1 { font-size: clamp(40px, 12vw, 60px); }
+        p  { font-size: clamp(12px, 2.6vw, 18px); }
+        h2 { font-size: clamp(16px, 4.8vw, 24px); }
+        .icon { width: clamp(16px, 4.8vw, 24px); clamp(16px, 4.8vw, 24px); }
         
         html, body {
             margin:0;
@@ -70,6 +75,19 @@
             z-index:10;
         }
         .panel.active { left:0; }
+
+        @media (orientation: portrait)
+        {
+            .panel {
+                top:-500px;
+                left:-500px; /* width보다 크게 */
+                position:fixed;
+                width:100%;
+                height:100%;
+                background:url('sey_gallery/bg.jpg') center/cover no-repeat;
+                z-index:-1;
+            }
+        }
 
         /* 닫기 버튼 */
         .close-btn {
@@ -145,12 +163,12 @@
 <div class="bg"></div>
 
 <div class="center">
-    <h1 style="font-size: 64px;">Sey</h1>
-    <p style="font-size: 18px;">Singer-Songwriter & Composer</p>
+    <h1>Sey</h1>
+    <p>Singer-Songwriter & Composer</p>
 </div>
 
 <div class="buttons">
-    <p style="font-size: 24px;"><a onclick="toggleGallery()">Gallery</a>&nbsp&nbsp<a onclick="toggleMusic()">Music</a>&nbsp&nbsp&nbsp&nbsp<a href="https://instagram.com/todays.sey" target="_blank"><img src="sey_gallery/icon_insta.png" width="24" height="24"></a></p>
+    <h2><a onclick="toggleGallery()">Gallery</a>&nbsp&nbsp<a onclick="toggleMusic()">Music</a>&nbsp&nbsp&nbsp&nbsp<a href="https://instagram.com/todays.sey" target="_blank"><img src="sey_gallery/icon_insta.png" class="icon"></a></h2>
 </div>
 
 <!-- 갤러리 -->
@@ -175,22 +193,22 @@
 
 <!-- 음악 -->
 <div id="music" class="panel">
-    <div class="close-btn" onclick="closePanels()">[ X ]</div>
+    <div class="close-btn" onclick="closePanels()"><p>[ X ]</p></div>
 
-    <div class="track" onclick="play('sey_tracks/2022_Personal_Film_Rework_-_TENET.mp3')"> 2022 Personal Film Rework - TENET</div>
-    <div class="track" onclick="play('sey_tracks/2022_Personal_Film_Rework_-_The_Bourne_Ultimatum.mp3')"> 2022 Personal Film Rework - The Bourne Ultimatum</div>
-    <div class="track" onclick="play('sey_tracks/2022_Personal_Fan-Work_-_Persona.mp3')"> 2022 Personal Fan-Work - Persona</div>
-    <div class="track" onclick="play('sey_tracks/2022_Dark_Fantasy_-_Witchcraft.mp3')"> 2022 Dark Fantasy - Witchcraft</div>
-    <div class="track" onclick="play('sey_tracks/2019_Mini_RPG_-_Cemetery.mp3')"> 2019 Mini RPG - Cemetery</div>
-    <div class="track" onclick="play('sey_tracks/2019_Mini_RPG_-_Sewer.mp3')"> 2019 Mini RPG - Sewer</div>
-    <div class="track" onclick="play('sey_tracks/2018_Mini_Game_-_Polygons.mp3')"> 2018 Mini Game - Polygons</div>
-    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Furious_Fight.mp3')"> 2018 Super Pixel Racers - Furious Fight</div>
-    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Chasing_Time.mp3')"> 2018 Super Pixel Racers - Chasing Time</div>
-    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Prodigy_Club.mp3')"> 2018 Super Pixel Racers - Prodigy Club</div> 
-    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Definite_Winner.mp3')"> 2018 Super Pixel Racers - Definite Winner</div>
+    <div class="track" onclick="play('sey_tracks/2022_Personal_Film_Rework_-_TENET.mp3')"><p> 2022 Personal Film Rework - TENET</p></div>
+    <div class="track" onclick="play('sey_tracks/2022_Personal_Film_Rework_-_The_Bourne_Ultimatum.mp3')"><p> 2022 Personal Film Rework - The Bourne Ultimatum</p></div>
+    <div class="track" onclick="play('sey_tracks/2022_Personal_Fan-Work_-_Persona.mp3')"><p> 2022 Personal Fan-Work - Persona</p></div>
+    <div class="track" onclick="play('sey_tracks/2022_Dark_Fantasy_-_Witchcraft.mp3')"><p> 2022 Dark Fantasy - Witchcraft</p></div>
+    <div class="track" onclick="play('sey_tracks/2019_Mini_RPG_-_Cemetery.mp3')"><p> 2019 Mini RPG - Cemetery</p></div>
+    <div class="track" onclick="play('sey_tracks/2019_Mini_RPG_-_Sewer.mp3')"><p> 2019 Mini RPG - Sewer</p></div>
+    <div class="track" onclick="play('sey_tracks/2018_Mini_Game_-_Polygons.mp3')"><p> 2018 Mini Game - Polygons</p></div>
+    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Furious_Fight.mp3')"><p> 2018 Super Pixel Racers - Furious Fight</p></div>
+    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Chasing_Time.mp3')"><p> 2018 Super Pixel Racers - Chasing Time</p></div>
+    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Prodigy_Club.mp3')"><p> 2018 Super Pixel Racers - Prodigy Club</p></div> 
+    <div class="track" onclick="play('sey_tracks/2018_Super_Pixel_Racers_-_Definite_Winner.mp3')"><p> 2018 Super Pixel Racers - Definite Winner</p></div>
 
     <div class="track" > </div>
-    <div id="nowPlaying" style="margin-top:10px; opacity:0.7;"></div>
+    <div style="margin-top:10px; opacity:0.7;"><p id="nowPlaying"></p></div>
     <audio id="player" controls controlsList="nodownload nofullscreen noplaybackrate"></audio>
 </div>
 
