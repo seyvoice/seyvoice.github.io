@@ -1,246 +1,146 @@
 <!DOCTYPE html>
-
 <html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<title>SE Wiki</title>
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<style>
+		/* 기존 스타일 유지 */
+		h1, h2, h3 { color: #eeeeee; }
+		body {
+			max-width: 900px;
+			margin: 40px auto;
+			padding: 0 20px;
+			line-height: 1.7;
+			color: #9F9Fa4;
+			background-color:#101014;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+		}
+		td, th { padding: 4px 8px; }
+		#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
+		#markdown-content code { padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; }
+		#markdown-content blockquote { border-left: 4px solid #8F8F94; color: #8F8F94; margin: 0; padding-left: 1em; }
+		a { color: #08c8c8; text-decoration: none; }
+		a:hover { text-decoration: underline; }
 
-	<head>
-	
-		<meta charset="UTF-8">
-		<title>SE Wiki</title>
-		<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-	
-		<style>
-			/* 마크다운 위키용 깔끔한 스타일 */
-			/* 17E6E6 009A47 FFDF38 FF0055 6B990F */
-			h1 { color: #eeeeee; }
-			h2 { color: #eeeeee; }
-			h3 { color: #eeeeee; }
-			body {
-				max-width: 900px;
-				margin: 40px auto;
-				padding: 0 20px;
-				line-height: 1.7;
-				color: #9F9Fa4;
-				background-color:#101014;
-				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-			}
-			td, th {
-				padding: 4px 8px; /*상하,좌우*/
-			}
-			#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
-			#markdown-content code { padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; }
-			#markdown-content blockquote { border-left: 4px solid #8F8F94; color: #8F8F94; margin: 0; padding-left: 1em; }
-			a { color: #08c8c8; text-decoration: none; }
-			a:hover { text-decoration: underline; }
+		.btn {
+			transition: all 0.2s;
+			width: 30px;
+			height: 30px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			font-size: 16px;
+			cursor: pointer;
+			color: #eeeeee;
+			background-color: #101014 !important;
+			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
+			position: absolute;
+			left: -35px;
+		}
+		.btn:hover { box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important; }
+		@media (max-width: 1000px) { .btn { left: 10px; top: 10px; } }
+	</style>
+</head>
+<body>
+<div id="wiki-wrapper" style="position: relative; max-width: 900px; margin: 40px auto; padding: 0 20px;">
+	<button id="back-button" class="btn" onclick="history.back()" style="display: none; top: 10px;">←</button>
+	<button id="refresh-button" class="btn" onclick="refreshContent()" title="새로고침" style="top: 50px;">↻</button>
+	<div id="markdown-content"></div>
 
-			@keyframes blink {
-				0% { opacity: 1; }
-				50% { opacity: 0.3; }
-				100% { opacity: 1; }
-			}
+	<script>
+		// 1. 환경 설정
+		const isGithub = window.location.hostname.includes('github.io');
+		const repoName = window.location.pathname.split('/')[1];
+		// 깃허브면 '/repo/', 로컬이면 '/'
+		const basePath = isGithub ? `/${repoName}/` : '/';
 
-			.btn {
-				transition: all 0.2s;
-				width: 30px;
-				height: 30px;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				border: 0px solid #ccc;
-				border-radius: 50%;
-				font-size: 16px;
-				cursor: pointer;
-				color: #eeeeee;
-				background-color: #101014 !important;
-				box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
+		// 2. 경로 보정 함수: 어떤 경로가 들어와도 절대 URL 경로로 변환
+		function resolveWikiPath(targetPath) {
+			if (targetPath.startsWith('http')) return targetPath;
+
+			// 현재 URL 기준으로 상대 경로 계산
+			const url = new URL(targetPath, window.location.href.split('#')[0]);
+			let finalPath = url.pathname;
+
+			// 깃허브에서 경로가 유실되는 경우 보정
+			if (isGithub && !finalPath.startsWith(`/${repoName}`)) {
+				finalPath = `/${repoName}${finalPath.startsWith('/') ? '' : '/'}${finalPath}`;
 			}
 
-			.btn:hover {
-				box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important;
-			}
+			return finalPath.replace(/\/+/g, '/');
+		}
 
-			.btn:active {
-				animation: blink 0.3s linear; /* 0.3초 동안 깜빡임 */
-			}
+		// 3. 마크다운 로드 함수
+		async function loadMarkdown(path, isBackAction = false) {
+			try {
+				// 해시(#) 제거 및 경로 정규화
+				const cleanPath = path.replace(/^#/, '');
+				const fetchPath = resolveWikiPath(cleanPath);
 
-			/* 화면이 작을 때는 본문 위로 올라오도록 조정 */
-			@media (max-width: 1000px) {
-				.btn {
-					left: 10px;
-					top: 10px;
+				console.log("Fetching:", fetchPath);
+
+				const response = await fetch(fetchPath);
+				if (!response.ok) throw new Error(`파일을 찾을 수 없음: ${fetchPath}`);
+
+				if (!isBackAction) {
+					history.pushState({ path: cleanPath }, '', '#' + cleanPath);
 				}
+
+				const markdownText = await response.text();
+				document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
+
+				updateUI(cleanPath);
+				attachLinkEvents();
+				window.scrollTo(0, 0);
+			} catch (error) {
+				console.error(error);
+				document.getElementById('markdown-content').innerHTML =
+						`<p style="color:red;">오류: ${error.message}<br><small>경로: ${path}</small></p>`;
 			}
-		</style>
-	
-	</head>
+		}
 
-	<body>
-		<div id="wiki-wrapper" style="position: relative; max-width: 900px; margin: 40px auto; padding: 0 20px;">
-			<!-- 버튼을 래퍼 기준으로 절대 위치 배치 -->
-			<button id="back-button" class="btn btn-back" onclick="history.back()" style="display: none; position: absolute; left: -30px; top: 10px; background: #fff">
-				←
-			</button>
-			<button id="refresh-button" class="btn btn-refresh" onclick="refreshContent()" title="캐시 새로고침" style="display: none; position: absolute; left: -30px; top: 60px; background: #fff">
-				↻
-			</button>
-	
-			<div id="markdown-content"></div>
-	
-			<script>
-				let projectPath = '/ProjectSilence/';
-				let projectPathDouble = '/ProjectSilence/ProjectSilence/';
-				// 경로 보정 함수
-				function resolvePath(path) {
-					if (path.startsWith('http')) return path;
-					path = projectPath + path;
-					path = path.replace(/\/\.\//g, '/');
-					path = path.replace(/^\.\//, '');
-					path = path.replace(/\/+/g, '/');
-					path = path.replace(projectPathDouble, projectPath);
-				return path;
-				}
-	
-				// 링크가 다시 뷰어로 향하도록 하는 함수
-				function attachLinkEvents() {
-					const links = document.querySelectorAll('#markdown-content a');
-					links.forEach(link => {
-						link.onclick = function(e) {
-							let href = this.getAttribute('href');
-							const t = this.getAttribute('target')
-	
-							// 유효하지 않은 링크거나 외부 링크면 무시
-							if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:')) return;
-	
-							e.preventDefault();
-	
-							href = resolvePath(href);
-							const isFile = href.toLowerCase().endsWith('.md') || href.toLowerCase().endsWith('.html');
-							if (isFile) {
-								loadMarkdown(href);
-							} else {
-								renderDirectoryListing(href);
-							}
-						};
-					});
-				}
-	
-				// 폴더 목록을 화면에 그리는 함수
-				async function renderDirectoryListing(path, isBackAction = false) {
-					try {
-						const response = await fetch(path);
-						if (!response.ok) throw new Error(`폴더를 읽을 수 없음: ${path}`);
+		// 4. 링크 이벤트 바인딩
+		function attachLinkEvents() {
+			const links = document.querySelectorAll('#markdown-content a');
+			links.forEach(link => {
+				link.onclick = function(e) {
+					const href = this.getAttribute('href');
+					if (!href || href.startsWith('http') || href.startsWith('#')) return;
 
-						const htmlText = await response.text();
-
-						// [수정] 뒤로 가기가 아닐 때만 pushState 실행
-						if (!isBackAction) {
-							history.pushState({path: path, type: 'folder'}, '', '#' + path);
-						}
-
-						const parser = new DOMParser();
-						const doc = parser.parseFromString(htmlText, 'text/html');
-						const links = Array.from(doc.querySelectorAll('a'));
-
-						let listHtml = '';
-						// renderDirectoryListing 함수 내부의 링크 생성 루프 수정
-						links.forEach(link => {
-							let href = resolvePath(path + '/' + link.getAttribute('href'));
-							let name = decodeURIComponent(link.textContent).replace('.md', '');
-
-							console.log("renderDirectoryListing:", path, href);
-							if(name.substr(0, 1) != '.') {
-								listHtml += `
-									<li style="margin: 10px 0;">
-										<a href="${href}">
-											${href.endsWith('/') ? '📂' : '📄'} ${name}
-										</a>
-									</li>
-								`;
-							}
-						});
-
-						path = resolvePath(path);
-						let pathes = path.split('/');
-						let p2 = pathes[pathes.length - 1];
-						let p1 = path.replace(p2, '');
-						document.getElementById('markdown-content').innerHTML = `
-							<div class="folder-view" style="padding: 20px; font-family: sans-serif;">
-								📂 ${decodeURIComponent(p1)}
-								<h2>📂 ${decodeURIComponent(p2)}</h2>
-								<hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-								<ul style="list-style: none; padding: 0;">
-									${listHtml || '<li>파일이 없습니다.</li>'}
-								</ul>
-							</div>
-						`;
-
-						attachLinkEvents();
-					} catch (error) {
-						document.getElementById('markdown-content').innerHTML = `<p style="color:red;">오류: ${error.message}</p>`;
-					}
-				}
-				
-				// 브라우저 뒤로 가기/앞으로 가기 감지
-				window.onpopstate = function(event) {
-					if (event && event.state && event.state.path) {
-						const path = event.state.path;
-						// 경로 끝이 .md나 .html인지 확인 (이미 짜두신 로직 활용)
-						const isFile = path.toLowerCase().endsWith('.md') || path.toLowerCase().endsWith('.html');
-	
-						if (isFile) {
-							loadMarkdown(path, true);
-						} else {
-							// [핵심] 폴더 상태였다면 폴더 그리기 함수 호출
-							renderDirectoryListing(path, true);
-						}
+					e.preventDefault();
+					// .md 파일인 경우 위키 뷰어로 로드
+					if (href.toLowerCase().endsWith('.md')) {
+						loadMarkdown(href);
+					} else {
+						// 그 외(폴더 등)는 README.md 시도
+						loadMarkdown(href.endsWith('/') ? href + 'README.md' : href + '/README.md');
 					}
 				};
-	
-				// 메인 로드 함수
-				async function loadMarkdown(path, isBackAction = false) {
-					try {
-						const response = await fetch(path);
-						if (!response.ok) throw new Error(`파일을 찾을 수 없음: ${path}`);
-	
-						// 뒤로 가기가 아닐 때만 히스토리에 저장
-						if (!isBackAction) {
-							history.pushState({ path: path }, '', '#' + path);
-						}
-						const buffer = await response.arrayBuffer();
-						const decoder = new TextDecoder('utf-8');
-						const markdownText = decoder.decode(buffer);
-						document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
-						updateBackButton(path); // 버튼 상태 업데이트
-						attachLinkEvents();
-						window.scrollTo(0, 0);
-					} catch (error) {
-						document.getElementById('markdown-content').innerHTML = `<p style="color:red;">오류: ${error.message}</p>`;
-					}
-				}
+			});
+		}
 
-				// 현재 페이지를 캐시 없이 다시 로드하는 함수
-				async function refreshContent() {
-					const currentPath = window.location.hash.substring(1) || 'Home.md';
-					const isFile = currentPath.toLowerCase().endsWith('.md') || currentPath.toLowerCase().endsWith('.html');
+		function updateUI(path) {
+			const isHome = path.toLowerCase().includes('home.md');
+			document.getElementById('back-button').style.display = isHome ? 'none' : 'flex';
+		}
 
-					if (isFile) {
-						await loadMarkdown(currentPath, true); // true를 전달해 히스토리 중복 방지
-					} else {
-						await renderDirectoryListing(currentPath, true);
-					}
-				}
+		async function refreshContent() {
+			const current = window.location.hash.substring(1) || 'Home.md';
+			await loadMarkdown(current, true);
+		}
 
-				// updateBackButton 함수에서 새로고침 버튼도 같이 제어
-				function updateBackButton(path) {
-					const backBtn = document.getElementById('back-button');
-					const refreshBtn = document.getElementById('refresh-button');
-					const isHome = path.toLowerCase() === 'home.md';
+		window.onpopstate = (e) => {
+			if (e.state && e.state.path) loadMarkdown(e.state.path, true);
+		};
 
-					backBtn.style.display = isHome ? 'none' : 'flex';
-					refreshBtn.style.display = 'flex'; // 홈에서도 쓰고 싶다면 'flex'로 고정
-				}
-	
-				loadMarkdown('Home.md'); // md 파일을 로드하여 렌더링
-			</script>
-		</div>
-	</body>
+		// 초기 로드
+		window.onload = () => {
+			const initialPath = window.location.hash.substring(1) || 'Home.md';
+			loadMarkdown(initialPath);
+		};
+	</script>
+</div>
+</body>
 </html>
