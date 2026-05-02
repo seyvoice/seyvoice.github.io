@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
 	<meta charset="UTF-8">
-	<title>Project Silence Wiki</title>
+	<title>SE Wiki</title>
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<style>
-		/* 기존의 세련된 다크 모드 스타일[cite: 1, 3] */
+		/*[cite: 1, 3] 소스 스타일 및 버튼 디자인 복구 */
 		h1, h2, h3 { color: #eeeeee; }
 		body {
 			max-width: 900px;
@@ -17,103 +17,117 @@
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 		}
 		#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
-		#markdown-content blockquote { border-left: 4px solid #8F8F94; color: #8F8F94; margin: 0; padding-left: 1em; }
 		a { color: #08c8c8; text-decoration: none; }
 		a:hover { text-decoration: underline; }
 
 		@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 		.btn {
-			transition: all 0.2s; width: 30px; height: 30px; display: flex;
-			align-items: center; justify-content: center; border-radius: 50%;
-			cursor: pointer; color: #000; background-color: #fff !important;
-			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.2); border: 0;
-			position: absolute; left: -35px;
+			transition: all 0.2s;
+			width: 30px; height: 30px;
+			display: flex; align-items: center; justify-content: center;
+			border-radius: 50%; font-size: 16px; cursor: pointer;
+			color: #101014; background-color: #eeeeee !important;
+			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
+			border: 0; position: absolute; left: -35px;
 		}
+		.btn:hover { box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important; }
 		.btn:active { animation: blink 0.3s linear; }
+		@media (max-width: 1000px) { .btn { left: 10px; top: 10px; } }
 	</style>
 </head>
 <body>
 <div id="wiki-wrapper" style="position: relative; max-width: 900px; margin: 40px auto; padding: 0 20px;">
-	<!-- 포털로 돌아가는 버튼 추가 -->
-	<button onclick="location.href='../index.html'" class="btn" title="포털로 이동" style="top: -30px;">🏠</button>
-	<button id="back-button" class="btn" onclick="history.back()" style="display: none; top: 20px;">←</button>
+	<button id="back-button" class="btn" onclick="history.back()" style="display: none; top: 10px;">←</button>
 	<button id="refresh-button" class="btn" onclick="refreshContent()" title="새로고침" style="top: 60px;">↻</button>
 
 	<div id="markdown-content"></div>
 
 	<script>
-		// 1. 경로 해결사 (URL 객체 활용)
-		function resolveWikiPath(targetPath) {
+		// [핵심] 깃허브 페이지스에서 index.html이 위치한 절대 경로를 파악합니다.
+		const siteRoot = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+
+		// 1. 경로 해결 함수: 모든 경로를 siteRoot 기반의 절대 경로로 변환
+		function getFullPath(targetPath) {
 			if (targetPath.startsWith('http')) return targetPath;
 
-			// 현재 페이지 위치 기준으로 절대 URL 경로 계산
-			const base = window.location.origin + window.location.pathname;
-			const url = new URL(targetPath, base + (window.location.hash.substring(1) || './'));
+			// 해시(#)로 시작하는 경로 처리
+			let clean = targetPath.replace(/^#/, '');
 
-			return url.pathname.replace(/\/+/g, '/');
+			// 상대 경로(./) 처리 및 절대 URL 생성
+			const url = new URL(clean, siteRoot);
+			let finalPath = url.pathname;
+
+			// 확장자가 없으면 README.md 추가 (폴더 접근 대응)
+			if (!finalPath.toLowerCase().endsWith('.md') && !finalPath.toLowerCase().endsWith('.html')) {
+				finalPath = finalPath.endsWith('/') ? finalPath + 'README.md' : finalPath + '/README.md';
+			}
+
+			return finalPath.replace(/\/+/g, '/');
 		}
 
-		// 2. 마크다운 로드 및 폴더 처리 (핵심 복구)
+		// 2. 마크다운 로드 함수
 		async function loadMarkdown(path, isBackAction = false) {
 			try {
-				let cleanPath = path.replace(/^#/, '');
-				let fetchPath = resolveWikiPath(cleanPath);
-
-				// [수정] 확장자가 없는 '폴더' 경로라면 README.md를 붙여서 시도
-				const isFile = fetchPath.toLowerCase().endsWith('.md') || fetchPath.toLowerCase().endsWith('.html');
-				if (!isFile) {
-					fetchPath = fetchPath.endsWith('/') ? fetchPath + 'README.md' : fetchPath + '/README.md';
-				}
-
-				console.log("🔍 TARS 스캔 경로:", fetchPath);
+				const fetchPath = getFullPath(path);
+				console.log("🔍 TARS Fetching:", fetchPath);
 
 				const response = await fetch(fetchPath);
-
-				// 만약 README.md도 없다면 (폴더 뷰어 실패 시)
-				if (!response.ok) {
-					throw new Error(`파일이나 README.md를 찾을 수 없음: ${fetchPath}`);
-				}
+				if (!response.ok) throw new Error(`HTTP ${response.status}: 파일을 찾을 수 없습니다.`);
 
 				const text = await response.text();
 				document.getElementById('markdown-content').innerHTML = marked.parse(text);
 
+				// 주소창 해시 업데이트
 				if (!isBackAction) {
-					history.pushState({ path: cleanPath }, '', '#' + cleanPath);
+					const hashPath = fetchPath.replace(window.location.pathname, '');
+					history.pushState({ path: hashPath }, '', '#' + hashPath);
 				}
 
-				updateUI(cleanPath);
+				updateUI(path);
 				attachLinkEvents();
 				window.scrollTo(0, 0);
 			} catch (error) {
 				console.error(error);
 				document.getElementById('markdown-content').innerHTML =
-						`<p style="color:red;">오류: Load failed<br><small>경로: ${path}</small><br><br>
-            <b>TARS의 진단:</b> 해당 폴더 안에 <b>README.md</b> 파일이 있는지 확인해주세요! 깃허브는 폴더 목록을 자동으로 보여주지 않습니다. ( ' x ' )</p>`;
+						`<p style="color:red;">오류: Load failed<br><small>시도한 경로: ${path}</small><br><br>
+                        <b>TARS 체크리스트:</b><br>
+                        1. 파일명의 대소문자가 정확한가요? (Home.md vs home.md)<br>
+                        2. 깃허브에 푸시 후 1~2분이 지났나요?</p>`;
 			}
 		}
 
-		// 3. 링크 이벤트 (폴더/파일 구분 로직 포함)
+		// 3. 링크 이벤트 바인딩
 		function attachLinkEvents() {
 			const links = document.querySelectorAll('#markdown-content a');
 			links.forEach(link => {
 				link.onclick = function(e) {
 					const href = this.getAttribute('href');
 					if (!href || href.startsWith('http') || href.startsWith('#')) return;
-
 					e.preventDefault();
-					// 링크 클릭 시 loadMarkdown이 폴더인지 파일인지 알아서 판단함
 					loadMarkdown(href);
 				};
 			});
 		}
 
-		async function refreshContent() {
-			const current = window.location.hash.substring(1) || 'README.md';
-			await loadMarkdown(current, true);
+		function updateUI(path) {
+			const isHome = path.toLowerCase().includes('home.md');
+			document.getElementById('back-button').style.display = isHome ? 'none' : 'flex';
 		}
 
-		window.onpopstate = (e) => { if (e.state) loadMarkdown(e.state.path, true); };
-		window.onload = () => { loadMarkdown(window.location.hash.substring(1)); };
+		function refreshContent() {
+			const current = window.location.hash.substring(1) || 'Home.md';
+			loadMarkdown(current, true);
+		}
+
+		window.onpopstate = (e) => {
+			if (e.state && e.state.path) loadMarkdown(e.state.path, true);
+		};
+
+		// 초기 실행
+		window.addEventListener('DOMContentLoaded', () => {
+			const start = window.location.hash.substring(1) || 'Home.md';
+			loadMarkdown(start);
+		});
 	</script>
 </div>
 </body>
