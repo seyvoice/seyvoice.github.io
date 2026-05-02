@@ -42,14 +42,37 @@
 	<div id="markdown-content"></div>
 
 	<script>
-		// 전용 위키 파일이 폴더 안에 있으므로 경로가 매우 단순함
+		// 1. 경로 해결사 (URL 객체 활용)
+		function resolveWikiPath(targetPath) {
+			if (targetPath.startsWith('http')) return targetPath;
+
+			// 현재 페이지 위치 기준으로 절대 URL 경로 계산
+			const base = window.location.origin + window.location.pathname;
+			const url = new URL(targetPath, base + (window.location.hash.substring(1) || './'));
+
+			return url.pathname.replace(/\/+/g, '/');
+		}
+
+		// 2. 마크다운 로드 및 폴더 처리 (핵심 복구)
 		async function loadMarkdown(path, isBackAction = false) {
 			try {
-				const cleanPath = path.replace(/^#/, '') || 'README.md'; // 기본값 README.md[cite: 1]
+				let cleanPath = path.replace(/^#/, '');
+				let fetchPath = resolveWikiPath(cleanPath);
 
-				// 같은 폴더 내의 파일을 직접 fetch
-				const response = await fetch(cleanPath);
-				if (!response.ok) throw new Error(`파일 없음: ${cleanPath}`);
+				// [수정] 확장자가 없는 '폴더' 경로라면 README.md를 붙여서 시도
+				const isFile = fetchPath.toLowerCase().endsWith('.md') || fetchPath.toLowerCase().endsWith('.html');
+				if (!isFile) {
+					fetchPath = fetchPath.endsWith('/') ? fetchPath + 'README.md' : fetchPath + '/README.md';
+				}
+
+				console.log("🔍 TARS 스캔 경로:", fetchPath);
+
+				const response = await fetch(fetchPath);
+
+				// 만약 README.md도 없다면 (폴더 뷰어 실패 시)
+				if (!response.ok) {
+					throw new Error(`파일이나 README.md를 찾을 수 없음: ${fetchPath}`);
+				}
 
 				const text = await response.text();
 				document.getElementById('markdown-content').innerHTML = marked.parse(text);
@@ -58,25 +81,27 @@
 					history.pushState({ path: cleanPath }, '', '#' + cleanPath);
 				}
 
-				// UI 업데이트
-				document.getElementById('back-button').style.display =
-						(cleanPath.toLowerCase().includes('readme.md')) ? 'none' : 'flex';
-
+				updateUI(cleanPath);
 				attachLinkEvents();
 				window.scrollTo(0, 0);
 			} catch (error) {
+				console.error(error);
 				document.getElementById('markdown-content').innerHTML =
-						`<p style="color:red;">오력: ${error.message}</p>`;
+						`<p style="color:red;">오류: Load failed<br><small>경로: ${path}</small><br><br>
+            <b>TARS의 진단:</b> 해당 폴더 안에 <b>README.md</b> 파일이 있는지 확인해주세요! 깃허브는 폴더 목록을 자동으로 보여주지 않습니다. ( ' x ' )</p>`;
 			}
 		}
 
+		// 3. 링크 이벤트 (폴더/파일 구분 로직 포함)
 		function attachLinkEvents() {
 			const links = document.querySelectorAll('#markdown-content a');
 			links.forEach(link => {
 				link.onclick = function(e) {
 					const href = this.getAttribute('href');
 					if (!href || href.startsWith('http') || href.startsWith('#')) return;
+
 					e.preventDefault();
+					// 링크 클릭 시 loadMarkdown이 폴더인지 파일인지 알아서 판단함
 					loadMarkdown(href);
 				};
 			});
