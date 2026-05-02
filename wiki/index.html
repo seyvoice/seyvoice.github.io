@@ -1,146 +1,52 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-	<meta charset="UTF-8">
-	<title>SE Wiki</title>
-	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-	<style>
-		/* 기존 스타일 유지 */
-		h1, h2, h3 { color: #eeeeee; }
-		body {
-			max-width: 900px;
-			margin: 40px auto;
-			padding: 0 20px;
-			line-height: 1.7;
-			color: #9F9Fa4;
-			background-color:#101014;
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-		}
-		td, th { padding: 4px 8px; }
-		#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
-		#markdown-content code { padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; }
-		#markdown-content blockquote { border-left: 4px solid #8F8F94; color: #8F8F94; margin: 0; padding-left: 1em; }
-		a { color: #08c8c8; text-decoration: none; }
-		a:hover { text-decoration: underline; }
-
-		.btn {
-			transition: all 0.2s;
-			width: 30px;
-			height: 30px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 50%;
-			font-size: 16px;
-			cursor: pointer;
-			color: #eeeeee;
-			background-color: #101014 !important;
-			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
-			position: absolute;
-			left: -35px;
-		}
-		.btn:hover { box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important; }
-		@media (max-width: 1000px) { .btn { left: 10px; top: 10px; } }
-	</style>
+    <meta charset="UTF-8">
+    <title>SE Wiki Portal</title>
+    <style>
+        body {
+            max-width: 800px;
+            margin: 100px auto;
+            padding: 0 20px;
+            background-color: #101014;
+            color: #eeeeee;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            text-align: center;
+        }
+        h1 { font-size: 2.5em; margin-bottom: 50px; color: #08c8c8; }
+        .portal-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .portal-card {
+            padding: 30px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #9F9Fa4;
+            transition: all 0.3s;
+            background: #16161a;
+        }
+        .portal-card:hover {
+            border-color: #08c8c8;
+            transform: translateY(-5px);
+            background: #1c1c21;
+            color: #eeeeee;
+        }
+        .portal-card h2 { margin: 0 0 10px 0; font-size: 1.5em; }
+        .portal-card p { margin: 0; font-size: 0.9em; opacity: 0.7; }
+    </style>
 </head>
 <body>
-<div id="wiki-wrapper" style="position: relative; max-width: 900px; margin: 40px auto; padding: 0 20px;">
-	<button id="back-button" class="btn" onclick="history.back()" style="display: none; top: 10px;">←</button>
-	<button id="refresh-button" class="btn" onclick="refreshContent()" title="새로고침" style="top: 50px;">↻</button>
-	<div id="markdown-content"></div>
-
-	<script>
-		// 1. 환경 설정
-		const isGithub = window.location.hostname.includes('github.io');
-		const repoName = window.location.pathname.split('/')[1];
-		// 깃허브면 '/repo/', 로컬이면 '/'
-		const basePath = isGithub ? `/${repoName}/` : '/';
-
-		// 2. 경로 보정 함수: 어떤 경로가 들어와도 절대 URL 경로로 변환
-		function resolveWikiPath(targetPath) {
-			if (targetPath.startsWith('http')) return targetPath;
-
-			// 현재 URL 기준으로 상대 경로 계산
-			const url = new URL(targetPath, window.location.href.split('#')[0]);
-			let finalPath = url.pathname;
-
-			// 깃허브에서 경로가 유실되는 경우 보정
-			if (isGithub && !finalPath.startsWith(`/${repoName}`)) {
-				finalPath = `/${repoName}${finalPath.startsWith('/') ? '' : '/'}${finalPath}`;
-			}
-
-			return finalPath.replace(/\/+/g, '/');
-		}
-
-		// 3. 마크다운 로드 함수
-		async function loadMarkdown(path, isBackAction = false) {
-			try {
-				// 해시(#) 제거 및 경로 정규화
-				const cleanPath = path.replace(/^#/, '');
-				const fetchPath = resolveWikiPath(cleanPath);
-
-				console.log("Fetching:", fetchPath);
-
-				const response = await fetch(fetchPath);
-				if (!response.ok) throw new Error(`파일을 찾을 수 없음: ${fetchPath}`);
-
-				if (!isBackAction) {
-					history.pushState({ path: cleanPath }, '', '#' + cleanPath);
-				}
-
-				const markdownText = await response.text();
-				document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
-
-				updateUI(cleanPath);
-				attachLinkEvents();
-				window.scrollTo(0, 0);
-			} catch (error) {
-				console.error(error);
-				document.getElementById('markdown-content').innerHTML =
-						`<p style="color:red;">오류: ${error.message}<br><small>경로: ${path}</small></p>`;
-			}
-		}
-
-		// 4. 링크 이벤트 바인딩
-		function attachLinkEvents() {
-			const links = document.querySelectorAll('#markdown-content a');
-			links.forEach(link => {
-				link.onclick = function(e) {
-					const href = this.getAttribute('href');
-					if (!href || href.startsWith('http') || href.startsWith('#')) return;
-
-					e.preventDefault();
-					// .md 파일인 경우 위키 뷰어로 로드
-					if (href.toLowerCase().endsWith('.md')) {
-						loadMarkdown(href);
-					} else {
-						// 그 외(폴더 등)는 README.md 시도
-						loadMarkdown(href.endsWith('/') ? href + 'README.md' : href + '/README.md');
-					}
-				};
-			});
-		}
-
-		function updateUI(path) {
-			const isHome = path.toLowerCase().includes('home.md');
-			document.getElementById('back-button').style.display = isHome ? 'none' : 'flex';
-		}
-
-		async function refreshContent() {
-			const current = window.location.hash.substring(1) || 'Home.md';
-			await loadMarkdown(current, true);
-		}
-
-		window.onpopstate = (e) => {
-			if (e.state && e.state.path) loadMarkdown(e.state.path, true);
-		};
-
-		// 초기 로드
-		window.onload = () => {
-			const initialPath = window.location.hash.substring(1) || 'Home.md';
-			loadMarkdown(initialPath);
-		};
-	</script>
+<h1>SE Wiki</h1>
+<div class="portal-container">
+    <!-- 프로젝트 사일런스 위키 -->
+    <a href="./ProjectSilence/wiki.html" class="portal-card">
+        <h2>🤫 Project Silence Wiki</h2>
+        <p>프로젝트 사일런스 개발 기록 및 위키</p>
+    </a>
+    <!-- 개인 위키 -->
+    <a href="./Sey/wiki.html" class="portal-card">
+        <h2>👤 Sey Wiki</h2>
+        <p>개인적인 생각과 아카이빙</p>
+    </a>
 </div>
 </body>
 </html>
