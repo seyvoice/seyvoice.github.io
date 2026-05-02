@@ -5,33 +5,24 @@
 	<title>SE Wiki</title>
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<style>
-		/*[cite: 1, 3] 대장님 전용 다크 모드 스타일 */
+		/* 스타일 및 버튼 배치 복구 */
 		h1, h2, h3 { color: #eeeeee; }
 		body {
-			max-width: 900px;
-			margin: 40px auto;
-			padding: 0 20px;
-			line-height: 1.7;
-			color: #9F9Fa4;
-			background-color:#101014;
+			max-width: 900px; margin: 40px auto; padding: 0 20px;
+			line-height: 1.7; color: #9F9Fa4; background-color:#101014;
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 		}
 		#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
 		a { color: #08c8c8; text-decoration: none; }
 		a:hover { text-decoration: underline; }
-
-		@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 		.btn {
-			transition: all 0.2s;
-			width: 30px; height: 30px;
+			transition: all 0.2s; width: 30px; height: 30px;
 			display: flex; align-items: center; justify-content: center;
 			border-radius: 50%; font-size: 16px; cursor: pointer;
 			color: #101014; background-color: #eeeeee !important;
 			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
 			border: 0; position: absolute; left: -40px;
 		}
-		.btn:hover { box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important; }
-		.btn:active { animation: blink 0.3s linear; }
 		@media (max-width: 1000px) { .btn { left: 10px; top: 10px; } }
 	</style>
 </head>
@@ -42,23 +33,25 @@
 	<div id="markdown-content"></div>
 
 	<script>
-		// 1. 현재 index.html이 위치한 폴더 주소를 확보합니다.
-		const siteRoot = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+		// [해결책] 현재 접속한 index.html의 전체 URL 경로를 기반으로 베이스 주소를 만듭니다.
+		const getBaseUrl = () => {
+			const loc = window.location;
+			return loc.origin + loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+		};
 
 		async function loadMarkdown(path, isBackAction = false) {
 			try {
-				// 해시(#) 제거 및 초기값 설정
-				let target = path.replace(/^#/, '');
+				let target = path.replace(/^#/, '').replace(/^\//, '');
 				if (!target) target = 'Home.md';
 
-				// 폴더 클릭 시 README.md 자동 연결 로직
+				// 폴더 클릭 시 README.md 자동 연결
 				if (!target.toLowerCase().endsWith('.md') && !target.toLowerCase().endsWith('.html')) {
 					target = target.endsWith('/') ? target + 'README.md' : target + '/README.md';
 				}
 
-				// [핵심] 절대 경로가 아닌, 현재 root 기준의 fetch 경로 생성
-				const fetchUrl = siteRoot + target.replace(/^\//, '');
-				console.log("🚀 TARS 로드 시도:", fetchUrl);
+				// [핵심] 베이스 URL에 타겟 경로를 붙여 완벽한 절대 주소 생성
+				const fetchUrl = getBaseUrl() + target;
+				console.log("🚀 TARS 최종 타겟:", fetchUrl);
 
 				const response = await fetch(fetchUrl);
 				if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -66,7 +59,6 @@
 				const text = await response.text();
 				document.getElementById('markdown-content').innerHTML = marked.parse(text);
 
-				// 히스토리 및 UI 업데이트
 				if (!isBackAction) history.pushState({ path: target }, '', '#' + target);
 
 				document.getElementById('back-button').style.display = target.toLowerCase().includes('home.md') ? 'none' : 'flex';
@@ -77,8 +69,8 @@
 				document.getElementById('markdown-content').innerHTML =
 						`<p style="color:red;">오류: Load failed<br><small>시도 경로: ${path}</small></p>
                         <p><b>TARS 긴급 점검:</b><br>
-                        - <b>Home.md</b>가 index.html과 같은 위치에 있나요?[cite: 3]<br>
-                        - 파일명 대소문자가 정확한가요? (예: README.md)</p>`;
+                        - <b>Home.md</b> 파일이 index.html과 같은 위치에 있나요?[cite: 3]<br>
+                        - 깃허브 저장소 설정(Settings > Pages)에서 <b>Branch</b>가 맞는지 확인해주세요.</p>`;
 			}
 		}
 
