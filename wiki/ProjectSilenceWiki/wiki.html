@@ -5,16 +5,21 @@
 	<title>SE Wiki</title>
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<style>
-		/* 스타일 및 버튼 배치 복구 */
+		/* 대장님 원본 스타일 유지 */
 		h1, h2, h3 { color: #eeeeee; }
 		body {
 			max-width: 900px; margin: 40px auto; padding: 0 20px;
 			line-height: 1.7; color: #9F9Fa4; background-color:#101014;
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 		}
+		td, th { padding: 4px 8px; }
 		#markdown-content img { max-width: 100%; height: auto; border-radius: 8px; }
+		#markdown-content code { padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; }
+		#markdown-content blockquote { border-left: 4px solid #8F8F94; color: #8F8F94; margin: 0; padding-left: 1em; }
 		a { color: #08c8c8; text-decoration: none; }
 		a:hover { text-decoration: underline; }
+
+		@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 		.btn {
 			transition: all 0.2s; width: 30px; height: 30px;
 			display: flex; align-items: center; justify-content: center;
@@ -23,6 +28,8 @@
 			box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.1) !important;
 			border: 0; position: absolute; left: -40px;
 		}
+		.btn:hover { box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.5) !important; }
+		.btn:active { animation: blink 0.3s linear; }
 		@media (max-width: 1000px) { .btn { left: 10px; top: 10px; } }
 	</style>
 </head>
@@ -33,44 +40,40 @@
 	<div id="markdown-content"></div>
 
 	<script>
-		// [해결책] 현재 접속한 index.html의 전체 URL 경로를 기반으로 베이스 주소를 만듭니다.
-		const getBaseUrl = () => {
-			const loc = window.location;
-			return loc.origin + loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-		};
+		// [수정] 상위 폴더 강제 결합 제거, 순수 상대 경로 유지
+		function resolvePath(path) {
+			if (path.startsWith('http') || path.startsWith('#')) return path;
+			// 불필요한 슬래시와 현재 디렉토리 기호(./)만 정리
+			return path.replace(/^\.\//, '').replace(/\/+/g, '/');
+		}
 
 		async function loadMarkdown(path, isBackAction = false) {
 			try {
-				let target = path.replace(/^#/, '').replace(/^\//, '');
-				if (!target) target = 'Home.md';
+				let target = path.replace(/^#/, '');
+				if (!target || target === '/') target = 'Home.md';
 
-				// 폴더 클릭 시 README.md 자동 연결
+				// [수정] 폴더마다 README.md가 있으므로, 확장자가 없는 경로는 README.md로 연결
+				let fetchUrl = target;
 				if (!target.toLowerCase().endsWith('.md') && !target.toLowerCase().endsWith('.html')) {
-					target = target.endsWith('/') ? target + 'README.md' : target + '/README.md';
+					fetchUrl = target.endsWith('/') ? target + 'README.md' : target + '/README.md';
 				}
 
-				// [핵심] 베이스 URL에 타겟 경로를 붙여 완벽한 절대 주소 생성
-				const fetchUrl = getBaseUrl() + target;
-				console.log("🚀 TARS 최종 타겟:", fetchUrl);
-
 				const response = await fetch(fetchUrl);
-				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+				if (!response.ok) throw new Error(`Load failed: ${fetchUrl}`);
 
-				const text = await response.text();
-				document.getElementById('markdown-content').innerHTML = marked.parse(text);
+				const buffer = await response.arrayBuffer();
+				const markdownText = new TextDecoder('utf-8').decode(buffer);
+				document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
 
 				if (!isBackAction) history.pushState({ path: target }, '', '#' + target);
 
-				document.getElementById('back-button').style.display = target.toLowerCase().includes('home.md') ? 'none' : 'flex';
+				updateUI(target);
 				attachLinkEvents();
 				window.scrollTo(0, 0);
 			} catch (error) {
 				console.error(error);
 				document.getElementById('markdown-content').innerHTML =
-						`<p style="color:red;">오류: Load failed<br><small>시도 경로: ${path}</small></p>
-                        <p><b>TARS 긴급 점검:</b><br>
-                        - <b>Home.md</b> 파일이 index.html과 같은 위치에 있나요?[cite: 3]<br>
-                        - 깃허브 저장소 설정(Settings > Pages)에서 <b>Branch</b>가 맞는지 확인해주세요.</p>`;
+						`<p style="color:red;">오류: Load failed<br><small>시도 경로: ${path}</small></p>`;
 			}
 		}
 
@@ -80,9 +83,15 @@
 					const href = this.getAttribute('href');
 					if (!href || href.startsWith('http') || href.startsWith('#')) return;
 					e.preventDefault();
-					loadMarkdown(href);
+					loadMarkdown(resolvePath(href));
 				};
 			});
+		}
+
+		function updateUI(path) {
+			const isHome = path.toLowerCase().includes('home.md');
+			document.getElementById('back-button').style.display = isHome ? 'none' : 'flex';
+			document.getElementById('refresh-button').style.display = 'flex';
 		}
 
 		function refreshContent() {
@@ -90,10 +99,15 @@
 			loadMarkdown(current, true);
 		}
 
-		window.onpopstate = (e) => loadMarkdown((e.state && e.state.path) ? e.state.path : 'Home.md', true);
+		window.onpopstate = (e) => {
+			const path = (e.state && e.state.path) ? e.state.path : 'Home.md';
+			loadMarkdown(path, true);
+		};
 
+		// 초기 구동
 		window.addEventListener('DOMContentLoaded', () => {
-			loadMarkdown(window.location.hash.substring(1) || 'Home.md');
+			const start = window.location.hash.substring(1) || 'Home.md';
+			loadMarkdown(start);
 		});
 	</script>
 </div>
