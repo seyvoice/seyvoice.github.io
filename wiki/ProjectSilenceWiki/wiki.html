@@ -46,7 +46,9 @@
 			if (!href || href.startsWith('http') || href.startsWith('#')) return href;
 
 			const base = new URL(currentPath, window.location.origin + window.location.pathname);
-			return new URL(href, base).pathname.replace(/^\//, '');
+			const resolved = new URL(href, base).pathname;
+
+			return resolved; // ⭐ /로 시작하는 절대경로
 		}
 
 		// 현재 경로 기준
@@ -69,7 +71,7 @@
 		}
 
 		async function loadMarkdown(path, isBackAction = false) {
-			currentPath = path; // ⭐ 핵심
+			currentPath = new URL(target, window.location.origin).pathname;; // ⭐ 핵심
 			try {
 				let target = path.replace(/^#/, '');
 				if (!target || target === '/') target = 'README.md';
