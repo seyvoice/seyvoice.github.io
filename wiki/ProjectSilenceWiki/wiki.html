@@ -71,10 +71,17 @@
 		}
 
 		async function loadMarkdown(path, isBackAction = false) {
-			currentPath = new URL(target, window.location.origin).pathname;; // ⭐ 핵심
 			try {
 				let target = path.replace(/^#/, '');
-				if (!target || target === '/') target = 'README.md';
+
+				if (!target || target === '/') {
+					target = 'README.md';
+				}
+
+				// ⭐ 절대경로 보정 (여기서만)
+				if (!target.startsWith('/')) {
+					target = window.location.pathname.replace(/\/[^\/]*$/, '/') + target;
+				}
 
 				// [수정] 폴더마다 README.md가 있으므로, 확장자가 없는 경로는 README.md로 연결
 				let fetchUrl = target;
@@ -119,8 +126,13 @@
 
 		// 초기 구동
 		window.addEventListener('DOMContentLoaded', () => {
-			const start = window.location.hash.substring(1) || 'README.md';
-			loadMarkdown(start);
+			const start = window.location.hash.substring(1);
+
+			if (!start) {
+				loadMarkdown('README.md'); // 상대경로 그대로
+			} else {
+				loadMarkdown(start);
+			}
 		});
 	</script>
 </div>
