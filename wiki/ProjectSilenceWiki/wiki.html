@@ -86,17 +86,20 @@
     <div id="markdown-content"></div>
 
     <script>
-        let projectPath = '/ProjectSilence/';
-        let projectPathDouble = '/ProjectSilence/ProjectSilence/';
+        let projectPath = '/wiki/ProjectSilenceWiki/';
+        let projectPathDouble = '/wiki/ProjectSilenceWiki/wiki/ProjectSilenceWiki/';
         // 경로 보정 함수
         function resolvePath(path) {
             if (path.startsWith('http')) return path;
-            path = projectPath + path;
-            path = path.replace(/\/\.\//g, '/');
-            path = path.replace(/^\.\//, '');
-            path = path.replace(/\/+/g, '/');
-            path = path.replace(projectPathDouble, projectPath);
-            return path;
+
+            // 이미 절대경로면 그대로
+            if (path.startsWith('/')) return path;
+
+            // 현재 URL 기준 경로 추출
+            const current = window.location.hash.substring(1);
+            const base = current.substring(0, current.lastIndexOf('/') + 1);
+
+            return base + path.replace(/^\.\//, '');
         }
 
         // 링크가 다시 뷰어로 향하도록 하는 함수
@@ -113,133 +116,63 @@
                     e.preventDefault();
 
                     href = resolvePath(href);
-                    const isFile = href.toLowerCase().endsWith('.md') || href.toLowerCase().endsWith('.html');
-                    if (isFile) {
-                        loadMarkdown(href);
-                    } else {
-                        renderDirectoryListing(href);
-                    }
+                    loadMarkdown(href);
                 };
             });
-        }
-
-        // 폴더 목록을 화면에 그리는 함수
-        async function renderDirectoryListing(path, isBackAction = false) {
-            try {
-                const response = await fetch(path);
-                if (!response.ok) throw new Error(`폴더를 읽을 수 없음: ${path}`);
-
-                const htmlText = await response.text();
-
-                // [수정] 뒤로 가기가 아닐 때만 pushState 실행
-                if (!isBackAction) {
-                    history.pushState({path: path, type: 'folder'}, '', '#' + path);
-                }
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
-                const links = Array.from(doc.querySelectorAll('a'));
-
-                let listHtml = '';
-                // renderDirectoryListing 함수 내부의 링크 생성 루프 수정
-                links.forEach(link => {
-                    let href = resolvePath(path + '/' + link.getAttribute('href'));
-                    let name = decodeURIComponent(link.textContent).replace('.md', '');
-
-                    console.log("renderDirectoryListing:", path, href);
-                    if(name.substr(0, 1) != '.') {
-                        listHtml += `
-									<li style="margin: 10px 0;">
-										<a href="${href}">
-											${href.endsWith('/') ? '📂' : '📄'} ${name}
-										</a>
-									</li>
-								`;
-                    }
-                });
-
-                path = resolvePath(path);
-                let pathes = path.split('/');
-                let p2 = pathes[pathes.length - 1];
-                let p1 = path.replace(p2, '');
-                document.getElementById('markdown-content').innerHTML = `
-							<div class="folder-view" style="padding: 20px; font-family: sans-serif;">
-								📂 ${decodeURIComponent(p1)}
-								<h2>📂 ${decodeURIComponent(p2)}</h2>
-								<hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-								<ul style="list-style: none; padding: 0;">
-									${listHtml || '<li>파일이 없습니다.</li>'}
-								</ul>
-							</div>
-						`;
-
-                attachLinkEvents();
-            } catch (error) {
-                document.getElementById('markdown-content').innerHTML = `<p style="color:red;">오류: ${error.message}</p>`;
-            }
         }
 
         // 브라우저 뒤로 가기/앞으로 가기 감지
         window.onpopstate = function(event) {
             if (event && event.state && event.state.path) {
                 const path = event.state.path;
-                // 경로 끝이 .md나 .html인지 확인 (이미 짜두신 로직 활용)
-                const isFile = path.toLowerCase().endsWith('.md') || path.toLowerCase().endsWith('.html');
-
-                if (isFile) {
-                    loadMarkdown(path, true);
-                } else {
-                    // [핵심] 폴더 상태였다면 폴더 그리기 함수 호출
-                    renderDirectoryListing(path, true);
-                }
+                loadMarkdown(path, true);
             }
         };
 
         // 메인 로드 함수
         async function loadMarkdown(path, isBackAction = false) {
             try {
+                // ⭐ 폴더 처리
+                if (!path.toLowerCase().endsWith('.md') && !path.toLowerCase().endsWith('.html')) {
+                    path = path.endsWith('/') ? path + 'README.md' : path + '/README.md';
+                }
+
                 const response = await fetch(path);
                 if (!response.ok) throw new Error(`파일을 찾을 수 없음: ${path}`);
 
-                // 뒤로 가기가 아닐 때만 히스토리에 저장
                 if (!isBackAction) {
                     history.pushState({ path: path }, '', '#' + path);
                 }
-                const buffer = await response.arrayBuffer();
-                const decoder = new TextDecoder('utf-8');
-                const markdownText = decoder.decode(buffer);
+
+                const markdownText = await response.text();
                 document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
-                updateBackButton(path); // 버튼 상태 업데이트
+
+                updateBackButton(path);
                 attachLinkEvents();
                 window.scrollTo(0, 0);
             } catch (error) {
-                document.getElementById('markdown-content').innerHTML = `<p style="color:red;">오류: ${error.message}</p>`;
+                document.getElementById('markdown-content').innerHTML =
+                    `<p style="color:red;">오류: ${error.message}</p>`;
             }
         }
 
         // 현재 페이지를 캐시 없이 다시 로드하는 함수
         async function refreshContent() {
-            const currentPath = window.location.hash.substring(1) || 'Home.md';
-            const isFile = currentPath.toLowerCase().endsWith('.md') || currentPath.toLowerCase().endsWith('.html');
-
-            if (isFile) {
-                await loadMarkdown(currentPath, true); // true를 전달해 히스토리 중복 방지
-            } else {
-                await renderDirectoryListing(currentPath, true);
-            }
+            const current = window.location.hash.substring(1) || '/wiki/ProjectSilenceWiki/README.md';
+            loadMarkdown(current, true);
         }
 
         // updateBackButton 함수에서 새로고침 버튼도 같이 제어
         function updateBackButton(path) {
             const backBtn = document.getElementById('back-button');
             const refreshBtn = document.getElementById('refresh-button');
-            const isHome = path.toLowerCase() === 'home.md';
+            const isHome = path.toLowerCase().endsWith('readme.md');
 
             backBtn.style.display = isHome ? 'none' : 'flex';
             refreshBtn.style.display = 'flex'; // 홈에서도 쓰고 싶다면 'flex'로 고정
         }
 
-        loadMarkdown('Home.md'); // md 파일을 로드하여 렌더링
+        loadMarkdown('/wiki/ProjectSilenceWiki/README.md'); // md 파일을 로드하여 렌더링
     </script>
 </div>
 </body>
