@@ -168,7 +168,8 @@
             const refreshBtn = document.getElementById('refresh-button');
             const isHome = path.toLowerCase().endsWith('readme.md');
 
-            backBtn.style.display = isHome ? 'none' : 'flex';
+            // backBtn.style.display = isHome ? 'none' : 'flex';
+            backBtn.style.display = 'flex';
             refreshBtn.style.display = 'flex'; // 홈에서도 쓰고 싶다면 'flex'로 고정
         }
 
