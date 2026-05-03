@@ -50,7 +50,7 @@
 		async function loadMarkdown(path, isBackAction = false) {
 			try {
 				let target = path.replace(/^#/, '');
-				if (!target || target === '/') target = 'Home.md';
+				if (!target || target === '/') target = 'README.md';
 
 				// [수정] 폴더마다 README.md가 있으므로, 확장자가 없는 경로는 README.md로 연결
 				let fetchUrl = target;
@@ -89,24 +89,24 @@
 		}
 
 		function updateUI(path) {
-			const isHome = path.toLowerCase().includes('home.md');
+			const isHome = path.toLowerCase().includes('README.md');
 			document.getElementById('back-button').style.display = isHome ? 'none' : 'flex';
 			document.getElementById('refresh-button').style.display = 'flex';
 		}
 
 		function refreshContent() {
-			const current = window.location.hash.substring(1) || 'Home.md';
+			const current = window.location.hash.substring(1) || 'README.md';
 			loadMarkdown(current, true);
 		}
 
 		window.onpopstate = (e) => {
-			const path = (e.state && e.state.path) ? e.state.path : 'Home.md';
+			const path = (e.state && e.state.path) ? e.state.path : 'README.md';
 			loadMarkdown(path, true);
 		};
 
 		// 초기 구동
 		window.addEventListener('DOMContentLoaded', () => {
-			const start = window.location.hash.substring(1) || 'Home.md';
+			const start = window.location.hash.substring(1) || 'README.md';
 			loadMarkdown(start);
 		});
 	</script>
