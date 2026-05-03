@@ -5,7 +5,6 @@
 	<title>SE Wiki</title>
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<style>
-		/* 대장님 원본 스타일 유지 */
 		h1, h2, h3 { color: #eeeeee; }
 		body {
 			max-width: 900px; margin: 40px auto; padding: 0 20px;
@@ -41,10 +40,34 @@
 
 	<script>
 		// [수정] 상위 폴더 강제 결합 제거, 순수 상대 경로 유지
-		function resolvePath(path) {
-			if (path.startsWith('http') || path.startsWith('#')) return path;
-			// 불필요한 슬래시와 현재 디렉토리 기호(./)만 정리
-			return path.replace(/^\.\//, '').replace(/\/+/g, '/');
+		function resolvePath(href, currentPath) {
+			if (!href || href.startsWith('http') || href.startsWith('#')) return href;
+
+			const base = getBaseDir(currentPath);
+
+			// ./ 제거
+			href = href.replace(/^\.\//, '');
+
+			return base + href;
+		}
+
+		// 현재 경로 기준
+		function getBaseDir(path) {
+			const idx = path.lastIndexOf('/');
+			return idx === -1 ? '' : path.substring(0, idx + 1);
+		}
+
+		function attachLinkEvents(currentPath) {
+			document.querySelectorAll('#markdown-content a').forEach(link => {
+				link.onclick = function(e) {
+					const href = this.getAttribute('href');
+					if (!href || href.startsWith('http') || href.startsWith('#')) return;
+
+					e.preventDefault();
+					const resolved = resolvePath(href, currentPath);
+					loadMarkdown(resolved);
+				};
+			});
 		}
 
 		async function loadMarkdown(path, isBackAction = false) {
@@ -68,24 +91,13 @@
 				if (!isBackAction) history.pushState({ path: target }, '', '#' + target);
 
 				updateUI(target);
-				attachLinkEvents();
+				attachLinkEvents(target);
 				window.scrollTo(0, 0);
 			} catch (error) {
 				console.error(error);
 				document.getElementById('markdown-content').innerHTML =
 						`<p style="color:red;">오류: Load failed<br><small>시도 경로: ${path}</small></p>`;
 			}
-		}
-
-		function attachLinkEvents() {
-			document.querySelectorAll('#markdown-content a').forEach(link => {
-				link.onclick = function(e) {
-					const href = this.getAttribute('href');
-					if (!href || href.startsWith('http') || href.startsWith('#')) return;
-					e.preventDefault();
-					loadMarkdown(resolvePath(href));
-				};
-			});
 		}
 
 		function updateUI(path) {
