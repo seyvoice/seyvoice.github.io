@@ -1,15 +1,13 @@
 <script>
-	let currentPath = "";
+    let currentPath = "/wiki/ProjectSilenceWiki/README.md";
 
 	// ✅ 절대경로 기반 resolve
-	function resolvePath(href) {
-		if (!href || href.startsWith("http") || href.startsWith("#")) return href;
+    function resolvePath(href) {
+        if (!href || href.startsWith("http") || href.startsWith("#")) return href;
 
-		const base = new URL(currentPath, window.location.origin);
-		const resolved = new URL(href, base).pathname;
-
-		return resolved;
-	}
+        const base = new URL(currentPath, window.location.origin + "/");
+        return new URL(href, base).pathname;
+    }
 
 	// ✅ 링크 이벤트
 	function attachLinkEvents() {
@@ -35,9 +33,9 @@
 			}
 
 			// 2️⃣ 절대경로 강제
-			if (!target.startsWith("/")) {
-				target = "/" + target;
-			}
+            if (!target.startsWith("/wiki/")) {
+                target = "/wiki/ProjectSilenceWiki/" + target;
+            }
 
 			// 3️⃣ 폴더 → README.md
 			let fetchUrl = target;
