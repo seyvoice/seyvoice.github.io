@@ -1,4 +1,4 @@
-### ProjectSilenceWiki
+### project silence wiki
 ## 📂 1 디렉팅 플롯
 
 1. **[Overview](./1_Overview.md)**

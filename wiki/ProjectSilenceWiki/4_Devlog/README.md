@@ -1,4 +1,4 @@
-### ProjectSilenceWiki
+### project silence wiki
 ## 📂 4 Devlog
 
 1. **[Devlog](./1_Devlog.md)**

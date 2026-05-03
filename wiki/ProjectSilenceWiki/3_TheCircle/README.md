@@ -1,4 +1,4 @@
-### ProjectSilenceWiki
+### project silence wiki
 ## 📂 3 The Circle
 
 1. **[Scenario & Sequences](./1_Scenario_Sequences.md)**
