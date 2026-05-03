@@ -35,18 +35,46 @@
     </style>
 </head>
 <body>
-<h1>SE Wiki</h1>
-<div class="portal-container">
-    <!-- 프로젝트 사일런스 위키 -->
-    <a href="./ProjectSilenceWiki/wiki.html" class="portal-card">
-        <h2>🤫 Project Silence Wiki</h2>
-        <p>프로젝트 사일런스 개발 기록 및 위키</p>
-    </a>
-    <!-- 개인 위키 -->
-    <a href="./SeyWiki/wiki.html" class="portal-card">
-        <h2>👤 Sey Wiki</h2>
-        <p>개인적인 생각과 아카이빙</p>
-    </a>
+
+<div id="login-box">
+    <h2>Login</h2>
+    <input id="id" placeholder="아이디"><br><br>
+    <input id="pw" type="password" placeholder="비밀번호"><br><br>
+    <button onclick="login()">입장</button>
 </div>
+
+<div id="content" style="display:none;">
+    <h1>SE Wiki</h1>
+    <div class="portal-container">
+        <!-- 프로젝트 사일런스 위키 -->
+        <a href="./ProjectSilenceWiki/wiki.html" class="portal-card">
+            <h2>🤫 project silence wiki</h2>
+            <p>프로젝트 사일런스 개발 기록 및 위키</p>
+        </a>
+        <!-- 개인 위키 -->
+        <a href="./SeyWiki/wiki.html" class="portal-card">
+            <h2>👤 Sey Wiki</h2>
+            <p>개인적인 생각과 아카이빙</p>
+        </a>
+    </div>
+</div>
+
+<script>
+    const USER = "sey";
+    const PASS = "03160816";
+
+    function login() {
+        const id = document.getElementById("id").value;
+        const pw = document.getElementById("pw").value;
+
+        if (id === USER && pw === PASS) {
+            document.getElementById("login-box").style.display = "none";
+            document.getElementById("content").style.display = "block";
+        } else {
+            alert("아이디 또는 비밀번호가 틀렸습니다.");
+        }
+    }
+</script>
+
 </body>
 </html>
