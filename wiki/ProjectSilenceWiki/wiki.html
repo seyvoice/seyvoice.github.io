@@ -39,16 +39,14 @@
 	<div id="markdown-content"></div>
 
 	<script>
+		let currentPath = '';
+		
 		// [수정] 상위 폴더 강제 결합 제거, 순수 상대 경로 유지
-		function resolvePath(href, currentPath) {
+		function resolvePath(href) {
 			if (!href || href.startsWith('http') || href.startsWith('#')) return href;
 
-			const base = getBaseDir(currentPath);
-
-			// ./ 제거
-			href = href.replace(/^\.\//, '');
-
-			return base + href;
+			const base = new URL(currentPath, window.location.origin + window.location.pathname);
+			return new URL(href, base).pathname.replace(/^\//, '');
 		}
 
 		// 현재 경로 기준
@@ -71,6 +69,7 @@
 		}
 
 		async function loadMarkdown(path, isBackAction = false) {
+			currentPath = path; // ⭐ 핵심
 			try {
 				let target = path.replace(/^#/, '');
 				if (!target || target === '/') target = 'README.md';
